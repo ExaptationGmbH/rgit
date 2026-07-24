@@ -117,6 +117,12 @@ rgit is a 1:1 pass-through to git: ANY git command works and runs in every
 repo found recursively below the current directory. The commands below are the
 ones that make the most sense to fan out across many repos.
 
+RGIT BUILT-INS (act on rgit itself, not per repo):
+    rgit help                Show this help
+    rgit version             Print the rgit version (same as --version)
+    rgit update              Update rgit (Homebrew or go install)
+
+
 OVERVIEW (read-only — safe to run anywhere):
     rgit status              Compact status table: branch, ahead/behind, changes
     rgit branch              List branches (add --show-current for just the tip)

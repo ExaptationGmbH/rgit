@@ -25,14 +25,21 @@ func run(argv []string) int {
 		fmt.Fprintln(os.Stderr, "rgit: "+err.Error())
 		return 2
 	}
-	// `rgit help` (as a bare command) is help, not `git help` per repo.
-	if opts.showHelp || (len(gitArgs) > 0 && gitArgs[0] == "help") {
+	// rgit built-in subcommands shadow the git pass-through: `rgit help`,
+	// `rgit version` and `rgit update` act on rgit itself, not per repo.
+	cmd := ""
+	if len(gitArgs) > 0 {
+		cmd = gitArgs[0]
+	}
+	switch {
+	case opts.showHelp || cmd == "help":
 		printUsage(os.Stdout)
 		return 0
-	}
-	if opts.showVersion {
+	case opts.showVersion || cmd == "version":
 		fmt.Println("rgit " + version)
 		return 0
+	case cmd == "update":
+		return selfUpdate(os.Stdout, os.Stderr)
 	}
 	if len(gitArgs) == 0 {
 		printUsage(os.Stderr)

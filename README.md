@@ -36,13 +36,9 @@ repo-a              main                        ✔ clean
 brew install ExaptationGmbH/tap/rgit
 ```
 
-This uses the custom tap at `github.com/ExaptationGmbH/homebrew-tap` (see
-[Releasing](#releasing) for how the tap is maintained). To try a formula from a
-local checkout without a tap:
-
-```sh
-brew install --build-from-source ./Formula/rgit.rb
-```
+Installs the prebuilt binary from the shared tap at
+`github.com/ExaptationGmbH/homebrew-tap`. Update later with `rgit update` or
+`brew upgrade rgit`.
 
 ### Go
 
@@ -152,36 +148,26 @@ Releases are automated with
 happens on merge to `main`:
 
 - `feat: …` → minor bump, `fix: …` → patch bump, `feat!:` / `BREAKING CHANGE`
-  → major bump. `chore:`/`docs:`/`refactor:` don't trigger a release.
+  → major bump. `chore:`/`docs:`/`refactor:` don't trigger a release. The first
+  release is `v0.0.1` (`initial-version` in `release-please-config.json`).
 - release-please opens and maintains a **release PR** that updates
   `CHANGELOG.md` and the version. Merging it tags `vX.Y.Z` and publishes a
   GitHub Release.
-- A follow-up CI job then runs `scripts/update-formula.sh` to pin
-  `Formula/rgit.rb` to the new release tarball's `sha256` and commits it back.
+- The `build` job then cross-compiles `rgit` for darwin/linux × arm64/amd64 and
+  attaches the binaries to the release as `rgit-vX.Y.Z-<os>-<arch>`.
 
 Version numbers are injected into the binary at build time via
-`-ldflags -X main.version=…`, so `rgit --version` reports the release tag.
+`-ldflags -X main.version=…`, so `rgit version` reports the release tag.
 
-### Setting up the Homebrew tap (one-time)
+### Homebrew tap (self-updating)
 
-`brew install ExaptationGmbH/tap/rgit` needs a tap repo named
-`github.com/ExaptationGmbH/homebrew-tap` containing the formula. A helper
-script does the whole first-time publish (push, tag, release, pin the formula,
-create the tap and push the formula into it) — run it once from a clean
-checkout with the [`gh` CLI](https://cli.github.com/) authenticated:
+The formula lives in the shared tap `github.com/ExaptationGmbH/homebrew-tap`,
+**not** in this repo. That tap runs its own `bump.yml` workflow which polls this
+repo hourly, and when a new release appears it downloads the release binaries,
+recomputes the `sha256`s, and opens an auto-merging PR to update the formula.
+Nothing here needs to touch the tap — this repo just publishes releases with
+binaries attached.
 
-```sh
-scripts/bootstrap-tap.sh            # tags v0.1.0
-# then:
-brew install ExaptationGmbH/tap/rgit
-```
-
-After each subsequent release, copy the freshly-pinned `Formula/rgit.rb` into
-the tap (the release-please CI job pins it in this repo). To pin manually:
-
-```sh
-scripts/update-formula.sh v0.1.0
-```
-
-> **Don't want to publish anything?** `make install` from this checkout builds
-> and installs `rgit` with no GitHub repo or tap required.
+> **Don't want Homebrew?** `make install` from this checkout builds and installs
+> `rgit` with no GitHub repo or tap required; or `go install
+> github.com/ExaptationGmbH/rgit@latest`.

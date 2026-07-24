@@ -1,9 +1,10 @@
 name: release-please
 
 # Conventional-commit driven releases. On every push to main, release-please
-# maintains a "release PR" that accumulates changes and bumps the version /
-# CHANGELOG. Merging that PR tags the release (vX.Y.Z) and publishes a GitHub
-# Release. A follow-up job then pins the Homebrew formula to the new tarball.
+# maintains a "release PR" that bumps the version / CHANGELOG. Merging it tags
+# the release (vX.Y.Z), publishes a GitHub Release, and attaches cross-compiled
+# binaries. The Homebrew formula lives in ExaptationGmbH/homebrew-tap, which
+# polls this repo and bumps itself — nothing here touches the tap.
 
 on:
   push:
@@ -20,35 +21,49 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
-          # Uses release-please-config.json + .release-please-manifest.json.
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # A PAT (secret RELEASE_PLEASE) lets the release PR trigger CI;
+          # falls back to GITHUB_TOKEN when it isn't set.
+          token: ${{ secrets.RELEASE_PLEASE || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Manifest mode only needs the latest release; keep the scan shallow.
+          release-search-depth: 5
 
-  # After a release is cut, compute the tarball sha256 and pin Formula/rgit.rb.
-  pin-formula:
+  # Cross-compile binaries and attach them to the GitHub Release. The tap's
+  # bump workflow downloads these exact asset names to compute sha256s.
+  build:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    strategy:
+      matrix:
+        include:
+          - { goos: darwin, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: linux, goarch: amd64 }
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          ref: main
-      - name: Pin formula to ${{ needs.release-please.outputs.tag_name }}
+          go-version: "1.22"
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+          TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
-          chmod +x scripts/update-formula.sh
-          ./scripts/update-formula.sh "${{ needs.release-please.outputs.tag_name }}"
-      - name: Commit pinned formula
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet Formula/rgit.rb; then
-            git add Formula/rgit.rb
-            git commit -m "chore: pin homebrew formula to ${{ needs.release-please.outputs.tag_name }}"
-            git push
-          else
-            echo "Formula already up to date."
-          fi
+          out="rgit-${TAG}-${GOOS}-${GOARCH}"
+          go build -trimpath -ldflags "-s -w -X main.version=${TAG}" -o "$out" .
+          echo "OUT=$out" >> "$GITHUB_ENV"
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: gh release upload "$TAG" "$OUT" --clobber

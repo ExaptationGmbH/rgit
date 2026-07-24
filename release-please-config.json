@@ -1,14 +1,21 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "include-v-in-tag": true,
+  "include-component-in-tag": false,
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "refactor", "section": "Refactoring", "hidden": false },
+    { "type": "deps", "section": "Dependencies" }
+  ],
   "packages": {
     ".": {
       "release-type": "go",
       "package-name": "rgit",
-      "include-v-in-tag": true,
-      "changelog-path": "CHANGELOG.md",
-      "bump-minor-pre-major": true,
-      "draft": false,
-      "prerelease": false
+      "initial-version": "0.0.1"
     }
   }
 }
