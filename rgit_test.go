@@ -113,6 +113,14 @@ func TestParseArgsSplitsRgitAndGit(t *testing.T) {
 	}
 }
 
+func TestHelpCommandDoesNotRunGit(t *testing.T) {
+	// `rgit help` must render usage (exit 0) rather than shelling out to
+	// git in every repo. run() with "help" should not touch the filesystem.
+	if code := run([]string{"help"}); code != 0 {
+		t.Errorf("run([help]) = %d, want 0", code)
+	}
+}
+
 func TestVisibleLenIgnoresANSI(t *testing.T) {
 	if got := visibleLen("\x1b[31mred\x1b[0m"); got != 3 {
 		t.Errorf("visibleLen = %d, want 3", got)

@@ -25,7 +25,8 @@ func run(argv []string) int {
 		fmt.Fprintln(os.Stderr, "rgit: "+err.Error())
 		return 2
 	}
-	if opts.showHelp {
+	// `rgit help` (as a bare command) is help, not `git help` per repo.
+	if opts.showHelp || (len(gitArgs) > 0 && gitArgs[0] == "help") {
 		printUsage(os.Stdout)
 		return 0
 	}

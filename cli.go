@@ -98,10 +98,33 @@ func printUsage(w io.Writer) {
 USAGE:
     rgit [rgit-flags] <git-command> [git-args...]
 
+rgit is a 1:1 pass-through to git: ANY git command works and runs in every
+repo found recursively below the current directory. The commands below are the
+ones that make the most sense to fan out across many repos.
+
+OVERVIEW (read-only — safe to run anywhere):
+    rgit status              Compact status table: branch, ahead/behind, changes
+    rgit branch              List branches (add --show-current for just the tip)
+    rgit log -1              Most recent commit per repo
+    rgit diff --stat         Uncommitted-change summary per repo
+    rgit stash list          Find forgotten stashes in any repo
+    rgit remote -v           Confirm every repo's remotes
+
+SYNC (network):
+    rgit fetch --all         Fetch everything; never touches the working tree
+    rgit pull --ff-only      Fast-forward every repo (safe for bulk runs)
+
+MAINTENANCE:
+    rgit gc                  Compact/optimise every repo
+    rgit remote prune origin Drop stale remote-tracking branches
+
+Destructive or per-repo commands (commit, push, merge, rebase, reset) still
+work, but think before fanning them out — see the project's
+multi-repo-git-commands.md for what's safe to run in bulk.
+
 EXAMPLES:
     rgit status              Compact status table for every repo found
     rgit fetch --all         Fetch in every repo, summarised
-    rgit pull --ff-only      Fast-forward every repo
     rgit --full log -1       Full git output (no condensing) of last commit
     rgit -j 16 status        Use 16 concurrent workers
 
