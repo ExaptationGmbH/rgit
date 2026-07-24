@@ -45,7 +45,15 @@ go install github.com/exaptation/rgit@latest
 ```sh
 git clone https://github.com/exaptation/rgit
 cd rgit
-make install            # installs to /usr/local/bin (override with PREFIX=…)
+make install                       # installs to /usr/local/bin
+```
+
+`/usr/local/bin` needs root on many systems (e.g. Apple Silicon macOS). If you
+hit a permission error, either:
+
+```sh
+sudo make install                  # into /usr/local/bin
+make install PREFIX=$HOME/.local   # no sudo; add ~/.local/bin to your PATH
 ```
 
 ## Usage
