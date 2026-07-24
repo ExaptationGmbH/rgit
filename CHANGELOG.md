@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2](https://github.com/ExaptationGmbH/rgit/compare/v0.0.1...v0.0.2) (2026-07-24)
+
+
+### Bug Fixes
+
+* align status state column regardless of branch length ([37f75c3](https://github.com/ExaptationGmbH/rgit/commit/37f75c3c0a4ae473df1b3c79c7a49b5e0dfdd94f))
+
 ## 0.0.1 (2026-07-24)
 
 
