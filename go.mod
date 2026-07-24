@@ -1,3 +1,3 @@
-module github.com/exaptation/rgit
+module github.com/ExaptationGmbH/rgit
 
 go 1.22.5

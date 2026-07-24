@@ -33,10 +33,10 @@ repo-a              main                        ✔ clean
 ### Homebrew
 
 ```sh
-brew install exaptation/tap/rgit
+brew install ExaptationGmbH/tap/rgit
 ```
 
-This uses the custom tap at `github.com/exaptation/homebrew-tap` (see
+This uses the custom tap at `github.com/ExaptationGmbH/homebrew-tap` (see
 [Releasing](#releasing) for how the tap is maintained). To try a formula from a
 local checkout without a tap:
 
@@ -47,13 +47,13 @@ brew install --build-from-source ./Formula/rgit.rb
 ### Go
 
 ```sh
-go install github.com/exaptation/rgit@latest
+go install github.com/ExaptationGmbH/rgit@latest
 ```
 
 ### From source
 
 ```sh
-git clone https://github.com/exaptation/rgit
+git clone https://github.com/ExaptationGmbH/rgit
 cd rgit
 make install                       # installs to /usr/local/bin
 ```
@@ -164,20 +164,24 @@ Version numbers are injected into the binary at build time via
 
 ### Setting up the Homebrew tap (one-time)
 
-`brew install exaptation/tap/rgit` needs a tap repo named
-`github.com/exaptation/homebrew-tap` containing the formula:
+`brew install ExaptationGmbH/tap/rgit` needs a tap repo named
+`github.com/ExaptationGmbH/homebrew-tap` containing the formula. A helper
+script does the whole first-time publish (push, tag, release, pin the formula,
+create the tap and push the formula into it) — run it once from a clean
+checkout with the [`gh` CLI](https://cli.github.com/) authenticated:
 
 ```sh
-# in the tap repo
-mkdir -p Formula
-cp /path/to/rgit/Formula/rgit.rb Formula/rgit.rb
-git add Formula/rgit.rb && git commit -m "rgit 0.1.0" && git push
+scripts/bootstrap-tap.sh            # tags v0.1.0
+# then:
+brew install ExaptationGmbH/tap/rgit
 ```
 
-After each release, copy the freshly-pinned `Formula/rgit.rb` from this repo
-into the tap (or automate it with a CI step that pushes to the tap using a PAT).
-To pin the formula manually for a tag:
+After each subsequent release, copy the freshly-pinned `Formula/rgit.rb` into
+the tap (the release-please CI job pins it in this repo). To pin manually:
 
 ```sh
 scripts/update-formula.sh v0.1.0
 ```
+
+> **Don't want to publish anything?** `make install` from this checkout builds
+> and installs `rgit` with no GitHub repo or tap required.

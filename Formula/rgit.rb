@@ -1,7 +1,7 @@
 # Homebrew formula for rgit.
 #
-# Usage once published to a tap (e.g. github.com/exaptation/homebrew-tap):
-#   brew install exaptation/tap/rgit
+# Usage once published to a tap (e.g. github.com/ExaptationGmbH/homebrew-tap):
+#   brew install ExaptationGmbH/tap/rgit
 #
 # To install straight from a local checkout while developing:
 #   brew install --build-from-source ./Formula/rgit.rb
@@ -11,11 +11,11 @@
 # with `brew install --HEAD rgit` without a release.
 class Rgit < Formula
   desc "Run a git command across every repo beneath the current directory"
-  homepage "https://github.com/exaptation/rgit"
-  url "https://github.com/exaptation/rgit/archive/refs/tags/v0.1.0.tar.gz"
+  homepage "https://github.com/ExaptationGmbH/rgit"
+  url "https://github.com/ExaptationGmbH/rgit/archive/refs/tags/v0.1.0.tar.gz"
   sha256 "REPLACE_WITH_TARBALL_SHA256"
   license "MIT"
-  head "https://github.com/exaptation/rgit.git", branch: "main"
+  head "https://github.com/ExaptationGmbH/rgit.git", branch: "main"
 
   depends_on "go" => :build
 

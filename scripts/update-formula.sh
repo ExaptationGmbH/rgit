@@ -13,7 +13,7 @@
 # Requires: curl, shasum (or sha256sum).
 set -euo pipefail
 
-OWNER="exaptation"
+OWNER="ExaptationGmbH"
 REPO="rgit"
 FORMULA="$(cd "$(dirname "$0")/.." && pwd)/Formula/rgit.rb"
 
