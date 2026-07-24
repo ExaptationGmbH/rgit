@@ -41,18 +41,27 @@ func (s repoStatus) clean() bool {
 func renderStatus(results []result, opts options) int {
 	p := newPalette(colorEnabled(opts))
 	statuses := make([]repoStatus, len(results))
-	nameWidth, branchWidth := 0, 0
+	nameMax, branchMax := 0, 0
 	for i, r := range results {
 		statuses[i] = parseStatus(r)
-		if l := runeLen(statuses[i].name); l > nameWidth {
-			nameWidth = l
+		if l := runeLen(statuses[i].name); l > nameMax {
+			nameMax = l
 		}
-		if l := runeLen(branchLabel(statuses[i])); l > branchWidth {
-			branchWidth = l
+		if l := runeLen(branchLabel(statuses[i])); l > branchMax {
+			branchMax = l
 		}
 	}
-	nameWidth = clampWidth(nameWidth, 6, 48)
-	branchWidth = clampWidth(branchWidth, 6, 24)
+	nameWidth := clampWidth(nameMax, 6, 48)
+
+	// Branches are never truncated (they must stay copy-pasteable). Pad them
+	// into an aligned column only when the widest row still fits the terminal;
+	// otherwise fall back to a compact, ragged layout that keeps full names.
+	// Reserve ~24 cols for the ahead/behind + state columns.
+	const stateReserve = 24
+	branchWidth := branchMax
+	if nameWidth+2+branchMax+stateReserve > termWidth() {
+		branchWidth = 0 // compact: don't pad the branch column
+	}
 
 	var dirty, clean, failed int
 	for _, s := range statuses {
@@ -91,9 +100,12 @@ func formatStatusLine(s repoStatus, nameWidth, branchWidth int, p palette) strin
 		return b.String()
 	}
 
-	// Branch column, truncated + padded to a fixed width so the state column
-	// always starts at the same offset regardless of branch length.
-	branch := padRunes(truncHead(branchLabel(s), branchWidth), branchWidth)
+	// Branch column — never truncated (must stay copy-pasteable). Padded to
+	// branchWidth when aligned mode is on; branchWidth == 0 means compact.
+	branch := padRunes(branchLabel(s), branchWidth)
+	if branchWidth == 0 {
+		branch += "  " // keep a separator before the state column
+	}
 	fmt.Fprintf(&b, "%s%s%s", p.cyan, branch, p.reset)
 
 	// Ahead/behind.
@@ -158,18 +170,6 @@ func padRunes(s string, width int) string {
 		return s + strings.Repeat(" ", width-n)
 	}
 	return s
-}
-
-// truncHead keeps the start of s, appending … when truncated.
-func truncHead(s string, width int) string {
-	r := []rune(s)
-	if len(r) <= width {
-		return s
-	}
-	if width <= 1 {
-		return string(r[:width])
-	}
-	return string(r[:width-1]) + "…"
 }
 
 // truncTail keeps the end of s (prefixing …), best for paths where the tail

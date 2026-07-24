@@ -2,8 +2,23 @@ package main
 
 import (
 	"os"
+	"strconv"
 	"strings"
+
+	"golang.org/x/term"
 )
+
+// termWidth returns the terminal width in columns for stdout, falling back to
+// the COLUMNS env var and then 80 when stdout isn't a terminal.
+func termWidth() int {
+	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
+		return w
+	}
+	if c, err := strconv.Atoi(os.Getenv("COLUMNS")); err == nil && c > 0 {
+		return c
+	}
+	return 80
+}
 
 // currentDir returns the process working directory, or "" if unavailable.
 func currentDir() string {
