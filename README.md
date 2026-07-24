@@ -30,7 +30,13 @@ repo-a              main                        ✔ clean
 
 ```sh
 brew install exaptation/tap/rgit
-# or, straight from a checkout:
+```
+
+This uses the custom tap at `github.com/exaptation/homebrew-tap` (see
+[Releasing](#releasing) for how the tap is maintained). To try a formula from a
+local checkout without a tap:
+
+```sh
 brew install --build-from-source ./Formula/rgit.rb
 ```
 
@@ -122,4 +128,42 @@ is `1` if git failed in any repo, else `0`.
 make test       # go test ./...
 make vet
 make build      # -> bin/rgit
+```
+
+## Releasing
+
+Releases are automated with
+[release-please](https://github.com/googleapis/release-please). Commit using
+[Conventional Commits](https://www.conventionalcommits.org/) and the rest
+happens on merge to `main`:
+
+- `feat: …` → minor bump, `fix: …` → patch bump, `feat!:` / `BREAKING CHANGE`
+  → major bump. `chore:`/`docs:`/`refactor:` don't trigger a release.
+- release-please opens and maintains a **release PR** that updates
+  `CHANGELOG.md` and the version. Merging it tags `vX.Y.Z` and publishes a
+  GitHub Release.
+- A follow-up CI job then runs `scripts/update-formula.sh` to pin
+  `Formula/rgit.rb` to the new release tarball's `sha256` and commits it back.
+
+Version numbers are injected into the binary at build time via
+`-ldflags -X main.version=…`, so `rgit --version` reports the release tag.
+
+### Setting up the Homebrew tap (one-time)
+
+`brew install exaptation/tap/rgit` needs a tap repo named
+`github.com/exaptation/homebrew-tap` containing the formula:
+
+```sh
+# in the tap repo
+mkdir -p Formula
+cp /path/to/rgit/Formula/rgit.rb Formula/rgit.rb
+git add Formula/rgit.rb && git commit -m "rgit 0.1.0" && git push
+```
+
+After each release, copy the freshly-pinned `Formula/rgit.rb` from this repo
+into the tap (or automate it with a CI step that pushes to the tap using a PAT).
+To pin the formula manually for a tag:
+
+```sh
+scripts/update-formula.sh v0.1.0
 ```
