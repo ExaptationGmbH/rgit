@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -17,18 +16,18 @@ func statusExecArgs(userExtra []string) []string {
 
 // repoStatus is the parsed, condensed state of one repository.
 type repoStatus struct {
-	name     string
-	branch   string
-	ahead    int
-	behind   int
-	staged   int
-	modified int
-	deleted  int
+	name      string
+	branch    string
+	ahead     int
+	behind    int
+	staged    int
+	modified  int
+	deleted   int
 	untracked int
 	conflicts int
-	detached bool
-	failed   bool
-	failMsg  string
+	detached  bool
+	failed    bool
+	failMsg   string
 }
 
 func (s repoStatus) clean() bool {
@@ -37,14 +36,9 @@ func (s repoStatus) clean() bool {
 }
 
 // renderStatus runs the status results through a compact per-repo table.
-// It ignores whatever extra flags the user passed to `status` for parsing
-// purposes and re-derives state from porcelain v2 output captured by exec,
-// which we requested by injecting the porcelain flag — see execForStatus.
+// Results are re-derived from the porcelain v2 output that main injected for
+// the status path; renderStatus is only reached when --full is off.
 func renderStatus(results []result, opts options) int {
-	if opts.full {
-		return renderGeneric(results, opts)
-	}
-
 	p := newPalette(colorEnabled(opts))
 	statuses := make([]repoStatus, len(results))
 	nameWidth := 0
@@ -85,10 +79,11 @@ func renderStatus(results []result, opts options) int {
 func formatStatusLine(s repoStatus, nameWidth int, p palette) string {
 	var b strings.Builder
 
-	// Name column.
+	// Name column. Truncate on rune boundaries so multibyte names aren't
+	// split into invalid UTF-8.
 	nameCol := s.name
-	if len(nameCol) > nameWidth {
-		nameCol = "…" + nameCol[len(nameCol)-nameWidth+1:]
+	if rs := []rune(nameCol); len(rs) > nameWidth {
+		nameCol = "…" + string(rs[len(rs)-nameWidth+1:])
 	}
 	fmt.Fprintf(&b, "%s%-*s%s  ", p.bold, nameWidth, nameCol, p.reset)
 
@@ -182,11 +177,11 @@ func summaryLine(total, clean, dirty, failed int, p palette) string {
 }
 
 // parseStatus derives a repoStatus from a git result. rgit runs status with
-// porcelain v2 + branch info (see maybeAugmentStatusArgs); if the output is
-// not in that format (because the user forced their own flags) we fall back
-// to marking the repo dirty/clean by output emptiness.
+// porcelain v2 + branch info (see statusExecArgs); if the output is not in
+// that format (because the user forced their own flags) the repo simply
+// reads as clean, which the caller can still distinguish from a failure.
 func parseStatus(r result) repoStatus {
-	s := repoStatus{name: r.name}
+	s := repoStatus{name: sanitizeLine(r.name)}
 	if r.runErr != nil {
 		s.failed = true
 		s.failMsg = "git not runnable"
@@ -194,7 +189,7 @@ func parseStatus(r result) repoStatus {
 	}
 	if r.exitCode != 0 {
 		s.failed = true
-		s.failMsg = firstLine(r.stderr)
+		s.failMsg = sanitizeLine(firstLine(r.stderr))
 		if s.failMsg == "" {
 			s.failMsg = "git exited " + strconv.Itoa(r.exitCode)
 		}
@@ -292,5 +287,3 @@ func firstLine(s string) string {
 	}
 	return s
 }
-
-var _ = os.Stdout

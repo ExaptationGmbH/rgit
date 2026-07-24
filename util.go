@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 )
 
 // currentDir returns the process working directory, or "" if unavailable.
@@ -10,6 +11,35 @@ func currentDir() string {
 		return d
 	}
 	return ""
+}
+
+// sanitizeLine strips control characters and ANSI escape sequences from a
+// string so that untrusted content — repo directory names and git output
+// from repositories rgit discovered — cannot inject terminal escape codes
+// (cursor moves, title changes, colour resets) into the condensed views.
+// Tabs become single spaces; C0/C1 controls and DEL are dropped. The raw
+// --full view intentionally does not go through this (it's an explicit
+// opt-in to see verbatim git output, like running git yourself).
+func sanitizeLine(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch {
+		case r == '\t':
+			b.WriteByte(' ')
+		case r == 0x1b: // ESC — drop so escape sequences can't form
+			continue
+		case r < 0x20: // other C0 controls (incl. CR/LF)
+			continue
+		case r == 0x7f: // DEL
+			continue
+		case r >= 0x80 && r <= 0x9f: // C1 controls
+			continue
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // capBuffer is a byte buffer that stops growing past a cap. git output for a

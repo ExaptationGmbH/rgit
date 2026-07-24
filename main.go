@@ -57,7 +57,7 @@ func run(argv []string) int {
 		execArgs = statusExecArgs(gitArgs[1:])
 	}
 
-	results := execAll(repos, execArgs, opts.jobs)
+	results := execAll(repos, execArgs, opts.jobs, opts.timeout)
 
 	// The status subcommand gets a bespoke compact table; everything else
 	// gets the generic condensed renderer.

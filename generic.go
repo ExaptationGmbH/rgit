@@ -42,12 +42,14 @@ func renderGeneric(results []result, opts options) int {
 	return 0
 }
 
-// printCondensed emits one line per repo: glyph + name + summary.
+// printCondensed emits one line per repo: glyph + name + summary. Both the
+// repo name and the summarised git output are sanitized because they come
+// from repositories rgit discovered and may contain terminal escapes.
 func printCondensed(r result, p palette) {
 	glyph, color := statusGlyph(r, p)
 
-	summary := summarise(r)
-	nameField := fmt.Sprintf("%s%s%s", p.bold, r.name, p.reset)
+	summary := sanitizeLine(summarise(r))
+	nameField := fmt.Sprintf("%s%s%s", p.bold, sanitizeLine(r.name), p.reset)
 
 	if summary == "" {
 		fmt.Printf("%s%s%s %s\n", color, glyph, p.reset, nameField)

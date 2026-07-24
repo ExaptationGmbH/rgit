@@ -32,7 +32,11 @@ FROM claude-container:latest
 # in this repo. Installed from the official tarball (Debian's golang-go
 # lags behind), then put on PATH for the claude user.
 USER root
-RUN curl -fsSL https://go.dev/dl/go1.22.5.linux-arm64.tar.gz -o /tmp/go.tar.gz \
+# Pinned version + sha256 so a tampered/mirrored tarball fails the build.
+ARG GO_VERSION=1.22.5
+ARG GO_SHA256=8d21325bfcf431be3660527c1a39d3d9ad71535fabdf5041c826e44e31642b5a
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz" -o /tmp/go.tar.gz \
+    && echo "${GO_SHA256}  /tmp/go.tar.gz" | sha256sum -c - \
     && tar -C /usr/local -xzf /tmp/go.tar.gz \
     && rm /tmp/go.tar.gz
 ENV PATH="/usr/local/go/bin:/home/claude/go/bin:${PATH}"

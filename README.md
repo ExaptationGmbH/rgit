@@ -90,7 +90,8 @@ rgit --full log -1       # full git output, no condensing
 | ------------------ | --------------------------------------------------- |
 | `-C, --dir <path>` | Root directory to scan (default: current directory) |
 | `--depth <n>`      | Max directory depth to descend (default: unlimited) |
-| `-j, --jobs <n>`   | Concurrent git invocations (default: auto)          |
+| `-j, --jobs <n>`   | Concurrent git invocations (default: auto, max 128) |
+| `--timeout <dur>`  | Per-repo git timeout, e.g. `30s`, `2m` (default: none) |
 | `-f, --full`       | Show full git output instead of the condensed view  |
 | `--no-color`       | Disable ANSI colours (also honours `NO_COLOR`)      |
 | `-h, --help`       | Help                                                |
@@ -125,6 +126,15 @@ is `1` if git failed in any repo, else `0`.
 - Repos are processed concurrently; output is sorted by path for stable,
   diff-friendly results.
 - rgit never changes the process working directory — it uses `git -C <repo>`.
+
+## Security
+
+rgit runs git in **every** repo it finds, so only point it at trees you trust:
+running git in an untrusted repo can execute code from that repo's config
+(fsmonitor, hooks, aliases). rgit hardens the subprocesses (no interactive
+credential prompts, SSH batch mode, stdin from `/dev/null`, output sanitized of
+terminal escapes, concurrency/output/`--timeout` bounds). See
+[SECURITY.md](SECURITY.md) for the full threat model and how to report issues.
 
 ## Development
 

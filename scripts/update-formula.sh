@@ -22,6 +22,12 @@ if [[ -z "$tag" ]]; then
   echo "usage: $0 <tag>   e.g. $0 v0.1.0" >&2
   exit 2
 fi
+# Constrain the tag to a semver-ish shape so it can't inject into the URL or
+# the sed replacement below.
+if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.]+)?$ ]]; then
+  echo "error: tag '$tag' is not a valid vMAJOR.MINOR.PATCH tag" >&2
+  exit 2
+fi
 
 url="https://github.com/${OWNER}/${REPO}/archive/refs/tags/${tag}.tar.gz"
 echo "Fetching $url"

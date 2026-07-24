@@ -3,7 +3,9 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseStatusPorcelainV2(t *testing.T) {
@@ -110,6 +112,42 @@ func TestParseArgsSplitsRgitAndGit(t *testing.T) {
 	}
 	if len(gitArgs) != 2 || gitArgs[0] != "status" || gitArgs[1] != "-s" {
 		t.Errorf("gitArgs = %v, want [status -s]", gitArgs)
+	}
+}
+
+func TestParseArgsTimeoutAndValidation(t *testing.T) {
+	opts, _, err := parseArgs([]string{"--timeout", "30s", "status"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.timeout != 30*time.Second {
+		t.Errorf("timeout = %v, want 30s", opts.timeout)
+	}
+
+	for _, bad := range [][]string{
+		{"--depth", "-1", "status"},
+		{"--timeout", "nope", "status"},
+		{"-j", "0", "status"},
+	} {
+		if _, _, err := parseArgs(bad); err == nil {
+			t.Errorf("parseArgs(%v) = nil error, want rejection", bad)
+		}
+	}
+}
+
+func TestSanitizeLineStripsEscapesAndControls(t *testing.T) {
+	// A repo name that tries to inject an OSC title-set + colour + newline.
+	in := "evil\x1b]0;pwned\x07\x1b[31mrepo\nline2\tend"
+	got := sanitizeLine(in)
+	if strings.ContainsAny(got, "\x1b\x07\n\r") {
+		t.Errorf("sanitizeLine left control chars: %q", got)
+	}
+	// Tab becomes a space; printable text is preserved.
+	if !strings.Contains(got, "end") || !strings.Contains(got, "repo") {
+		t.Errorf("sanitizeLine dropped printable text: %q", got)
+	}
+	if strings.Contains(got, "\t") {
+		t.Errorf("tab not converted: %q", got)
 	}
 }
 

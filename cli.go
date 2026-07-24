@@ -4,15 +4,17 @@ import (
 	"errors"
 	"io"
 	"strconv"
+	"time"
 )
 
 // options holds parsed rgit-level flags. Everything rgit does not recognise
 // is passed straight through to git.
 type options struct {
 	root        string
-	maxDepth    int  // -1 means unlimited
-	jobs        int  // concurrent git invocations
-	full        bool // show full git output instead of the condensed view
+	maxDepth    int           // -1 means unlimited
+	jobs        int           // concurrent git invocations
+	timeout     time.Duration // per-repo git timeout; 0 means none
+	full        bool          // show full git output instead of the condensed view
 	noColor     bool
 	showHelp    bool
 	showVersion bool
@@ -60,6 +62,9 @@ func parseArgs(argv []string) (options, []string, error) {
 			if err != nil {
 				return opts, nil, errors.New("invalid --depth: " + v)
 			}
+			if n < 0 {
+				return opts, nil, errors.New("--depth must be >= 0")
+			}
 			opts.maxDepth = n
 		case arg == "-j" || arg == "--jobs":
 			v, ok := next(argv, &i)
@@ -71,6 +76,16 @@ func parseArgs(argv []string) (options, []string, error) {
 				return opts, nil, errors.New("invalid job count: " + v)
 			}
 			opts.jobs = n
+		case arg == "--timeout":
+			v, ok := next(argv, &i)
+			if !ok {
+				return opts, nil, errors.New("--timeout requires a duration (e.g. 30s)")
+			}
+			d, err := time.ParseDuration(v)
+			if err != nil || d < 0 {
+				return opts, nil, errors.New("invalid --timeout: " + v)
+			}
+			opts.timeout = d
 		case arg == "--":
 			// Explicit end of rgit flags; the rest is the git command.
 			i++
@@ -131,7 +146,8 @@ EXAMPLES:
 RGIT FLAGS (must come before the git command):
     -C, --dir <path>   Root directory to scan (default: current directory)
     --depth <n>        Max directory depth to descend (default: unlimited)
-    -j, --jobs <n>     Concurrent git invocations (default: auto)
+    -j, --jobs <n>     Concurrent git invocations (default: auto, max 128)
+    --timeout <dur>    Per-repo git timeout, e.g. 30s or 2m (default: none)
     -f, --full         Show full git output instead of the condensed view
     --no-color         Disable ANSI colours
     -h, --help         Show this help
