@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/ExaptationGmbH/rgit/compare/v0.0.2...v0.0.3) (2026-07-24)
+
+
+### Features
+
+* terminal-width-aware status layout, never truncate branches ([a618189](https://github.com/ExaptationGmbH/rgit/commit/a61818913438eaf7470eb3be226895d875cbdbd2))
+
 ## [0.0.2](https://github.com/ExaptationGmbH/rgit/compare/v0.0.1...v0.0.2) (2026-07-24)
 
 
