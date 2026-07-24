@@ -1,5 +1,9 @@
 # rgit — recursive git
 
+> A friend of mine showed me a screenshot where they could do a `git status`
+> for multiple repos. So I took the idea and packaged it up into this.
+> Credits to [nanocat.net](https://nanocat.net/).
+
 `rgit` runs a git command across **every git repository beneath the current
 directory** and prints a condensed, at-a-glance overview.
 
@@ -82,15 +86,15 @@ rgit --full log -1       # full git output, no condensing
 
 ### rgit flags (must come before the git command)
 
-| Flag | Meaning |
-| --- | --- |
+| Flag               | Meaning                                             |
+| ------------------ | --------------------------------------------------- |
 | `-C, --dir <path>` | Root directory to scan (default: current directory) |
-| `--depth <n>` | Max directory depth to descend (default: unlimited) |
-| `-j, --jobs <n>` | Concurrent git invocations (default: auto) |
-| `-f, --full` | Show full git output instead of the condensed view |
-| `--no-color` | Disable ANSI colours (also honours `NO_COLOR`) |
-| `-h, --help` | Help |
-| `-v, --version` | Version |
+| `--depth <n>`      | Max directory depth to descend (default: unlimited) |
+| `-j, --jobs <n>`   | Concurrent git invocations (default: auto)          |
+| `-f, --full`       | Show full git output instead of the condensed view  |
+| `--no-color`       | Disable ANSI colours (also honours `NO_COLOR`)      |
+| `-h, --help`       | Help                                                |
+| `-v, --version`    | Version                                             |
 
 ## Reading the status table
 
@@ -98,15 +102,15 @@ rgit --full log -1       # full git output, no condensing
 repo-name            branch     ↑ahead ↓behind   state
 ```
 
-| Symbol | Meaning |
-| --- | --- |
-| `↑N` / `↓N` | commits ahead / behind the upstream |
-| `✔ clean` | nothing to commit, working tree clean |
-| `+N` | staged changes |
-| `~N` | modified (unstaged) |
-| `-N` | deleted |
-| `?N` | untracked files |
-| `✖N` | merge conflicts |
+| Symbol      | Meaning                               |
+| ----------- | ------------------------------------- |
+| `↑N` / `↓N` | commits ahead / behind the upstream   |
+| `✔ clean`   | nothing to commit, working tree clean |
+| `+N`        | staged changes                        |
+| `~N`        | modified (unstaged)                   |
+| `-N`        | deleted                               |
+| `?N`        | untracked files                       |
+| `✖N`        | merge conflicts                       |
 
 For any command other than `status`, each repo gets a one-line summary
 (`✔`/`✖` + repo name + the most meaningful line of git's output). Exit status
