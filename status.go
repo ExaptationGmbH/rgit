@@ -41,20 +41,22 @@ func (s repoStatus) clean() bool {
 func renderStatus(results []result, opts options) int {
 	p := newPalette(colorEnabled(opts))
 	statuses := make([]repoStatus, len(results))
-	nameWidth := 0
+	nameWidth, branchWidth := 0, 0
 	for i, r := range results {
 		statuses[i] = parseStatus(r)
-		if len(statuses[i].name) > nameWidth {
-			nameWidth = len(statuses[i].name)
+		if l := runeLen(statuses[i].name); l > nameWidth {
+			nameWidth = l
+		}
+		if l := runeLen(branchLabel(statuses[i])); l > branchWidth {
+			branchWidth = l
 		}
 	}
-	if nameWidth > 48 {
-		nameWidth = 48
-	}
+	nameWidth = clampWidth(nameWidth, 6, 48)
+	branchWidth = clampWidth(branchWidth, 6, 24)
 
 	var dirty, clean, failed int
 	for _, s := range statuses {
-		line := formatStatusLine(s, nameWidth, p)
+		line := formatStatusLine(s, nameWidth, branchWidth, p)
 		fmt.Println(line)
 		switch {
 		case s.failed:
@@ -76,28 +78,23 @@ func renderStatus(results []result, opts options) int {
 // formatStatusLine renders a single repo as one compact line:
 //
 //	name                 branch     ↑2 ↓1   +3 ~1 ?2
-func formatStatusLine(s repoStatus, nameWidth int, p palette) string {
+func formatStatusLine(s repoStatus, nameWidth, branchWidth int, p palette) string {
 	var b strings.Builder
 
-	// Name column. Truncate on rune boundaries so multibyte names aren't
-	// split into invalid UTF-8.
-	nameCol := s.name
-	if rs := []rune(nameCol); len(rs) > nameWidth {
-		nameCol = "…" + string(rs[len(rs)-nameWidth+1:])
-	}
-	fmt.Fprintf(&b, "%s%-*s%s  ", p.bold, nameWidth, nameCol, p.reset)
+	// Name column. Keep the tail when too long (the repo's own name is the
+	// most identifying part), padded to a fixed width so later columns align.
+	nameCol := truncTail(s.name, nameWidth)
+	fmt.Fprintf(&b, "%s%s%s  ", p.bold, padRunes(nameCol, nameWidth), p.reset)
 
 	if s.failed {
 		fmt.Fprintf(&b, "%s✖ %s%s", p.red, s.failMsg, p.reset)
 		return b.String()
 	}
 
-	// Branch column (fixed-ish width for alignment).
-	branch := s.branch
-	if s.detached {
-		branch = "(" + branch + ")"
-	}
-	fmt.Fprintf(&b, "%s%-16s%s", p.cyan, branch, p.reset)
+	// Branch column, truncated + padded to a fixed width so the state column
+	// always starts at the same offset regardless of branch length.
+	branch := padRunes(truncHead(branchLabel(s), branchWidth), branchWidth)
+	fmt.Fprintf(&b, "%s%s%s", p.cyan, branch, p.reset)
 
 	// Ahead/behind.
 	ab := ""
@@ -133,6 +130,59 @@ func formatStatusLine(s repoStatus, nameWidth int, p palette) string {
 	}
 
 	return b.String()
+}
+
+// branchLabel is the branch name as shown, wrapping detached HEADs in parens.
+func branchLabel(s repoStatus) string {
+	if s.detached {
+		return "(" + s.branch + ")"
+	}
+	return s.branch
+}
+
+func runeLen(s string) int { return len([]rune(s)) }
+
+func clampWidth(w, lo, hi int) int {
+	if w < lo {
+		return lo
+	}
+	if w > hi {
+		return hi
+	}
+	return w
+}
+
+// padRunes right-pads s with spaces to width, measured in runes.
+func padRunes(s string, width int) string {
+	if n := runeLen(s); n < width {
+		return s + strings.Repeat(" ", width-n)
+	}
+	return s
+}
+
+// truncHead keeps the start of s, appending … when truncated.
+func truncHead(s string, width int) string {
+	r := []rune(s)
+	if len(r) <= width {
+		return s
+	}
+	if width <= 1 {
+		return string(r[:width])
+	}
+	return string(r[:width-1]) + "…"
+}
+
+// truncTail keeps the end of s (prefixing …), best for paths where the tail
+// is the most identifying part.
+func truncTail(s string, width int) string {
+	r := []rune(s)
+	if len(r) <= width {
+		return s
+	}
+	if width <= 1 {
+		return string(r[len(r)-width:])
+	}
+	return "…" + string(r[len(r)-width+1:])
 }
 
 // stripPad pads s to width based on its *visible* length, ignoring ANSI
